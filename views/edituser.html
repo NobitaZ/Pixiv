@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixiv Tool - User Information</title>
+    <link rel="stylesheet" href="./bootstrap.min.css" />
+    <link rel="stylesheet" href="./admin-styles.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #eee;
+        max-width: 800px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-group">
+      <label for="name" class="col-sm-3 control-label">Name</label>
+      <div class="col-sm-9">
+        <input type="text" id="name" placeholder="Name" class="form-control" autofocus />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="userName" class="col-sm-3 control-label">User Name</label>
+      <div class="col-sm-9">
+        <input
+          type="text"
+          id="username"
+          placeholder="User Name"
+          class="form-control"
+          readonly="true"
+          autofocus
+        />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="mac" class="col-sm-3 control-label">MAC</label>
+      <div class="col-sm-9">
+        <input type="text" id="mac" placeholder="MAC Address" class="form-control" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="ipaddress1" class="col-sm-3 control-label">IP Address 1</label>
+      <div class="col-sm-9">
+        <input type="text" id="ipaddress1" placeholder="IP Address 1" class="form-control" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="ipaddress2" class="col-sm-3 control-label">IP Address 2</label>
+      <div class="col-sm-9">
+        <input type="text" id="ipaddress2" placeholder="IP Address 2" class="form-control" />
+      </div>
+    </div>
+    <div style="text-align: center">
+      <span>
+        <button class="btn btn-primary btn-xs my-xs-btn" id="btnSave">Save</button>
+        <button class="btn btn-secondary btn-xs my-xs-btn" id="btnCancel">Cancel</button>
+      </span>
+    </div>
+    <div id="msg-cus"></div>
+    <script>
+      const remote = require("electron").remote;
+      const ipcRenderer = require("electron").ipcRenderer;
+      const userField = document.getElementById("username");
+      const nameField = document.getElementById("name");
+      const macField = document.getElementById("mac");
+      const ip1Field = document.getElementById("ipaddress1");
+      const ip2Field = document.getElementById("ipaddress2");
+      const msgDiv = document.querySelector("#msg-cus");
+
+      ipcRenderer.on("data", function (e, userInfo) {
+        userField.value = userInfo.username;
+        nameField.value = userInfo.name;
+        macField.value = typeof userInfo.mac == "undefined" ? "" : userInfo.mac;
+        ip1Field.value = typeof userInfo.ip1 == "undefined" ? "" : userInfo.ip1;
+        ip2Field.value = typeof userInfo.ip2 == "undefined" ? "" : userInfo.ip2;
+      });
+
+      document.getElementById("btnSave").addEventListener("click", (e) => {
+        e.preventDefault();
+        let data = {};
+        data.name = nameField.value;
+        data.username = userField.value;
+        data.mac = macField.value;
+        data.ip1 = ip1Field.value;
+        data.ip2 = ip2Field.value;
+        if (macField.value != "" && ip1Field.value != "") {
+          if (validateMac(macField.value) && validateIPaddress(ip1Field.value)) {
+            if (ip2Field.value != "") {
+              if (validateIPaddress(ip2Field.value)) {
+                ipcRenderer.send("data-modified", data);
+                let WIN = remote.getCurrentWindow();
+                WIN.close();
+              }
+            } else {
+              ipcRenderer.send("data-modified", data);
+              let WIN = remote.getCurrentWindow();
+              WIN.close();
+            }
+          }
+        } else {
+          if (macField.value == "") {
+            msgDiv.className = "";
+            msgDiv.className += "alert alert-danger alert-dismissible show";
+            msgDiv.innerHTML = "Can not leave MAC address blank!";
+          } else if (ip1Field.value == "") {
+            msgDiv.className = "";
+            msgDiv.className += "alert alert-danger alert-dismissible show";
+            msgDiv.innerHTML = "Can not leave IP Address 1 blank!";
+          }
+        }
+      });
+      document.getElementById("btnCancel").addEventListener("click", (e) => {
+        let WIN = remote.getCurrentWindow();
+        WIN.close();
+      });
+      function validateIPaddress(ipaddress) {
+        if (
+          /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
+            ipaddress
+          )
+        ) {
+          return true;
+        }
+        // alert("You have entered an invalid IP address!");
+        msgDiv.className = "";
+        msgDiv.className += "alert alert-danger alert-dismissible show";
+        msgDiv.innerHTML = "You have entered an invalid IP address!";
+        return false;
+      }
+      function validateMac(mac) {
+        if (/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/.test(mac)) {
+          return true;
+        }
+        msgDiv.className = "";
+        msgDiv.className += "alert alert-danger alert-dismissible show";
+        msgDiv.innerHTML = "You have entered an invalid MAC address!";
+        return false;
+      }
+    </script>
+  </body>
+</html>

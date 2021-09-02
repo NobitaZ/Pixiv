@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./bootstrap.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Pixiv Import Account</title>
+    <style>
+      body {
+        font-family: "Varela Round", sans-serif;
+      }
+
+      /*Style the text area */
+      .import-area {
+        margin-left: 20px;
+        width: 450px;
+        height: 260px;
+        border: 1px solid #ccc;
+      }
+
+      .btnImport {
+        margin-top: -300px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-expand-md bg-dark navbar-dark">
+      <label class="navbar-brand">Pixiv Import Account</label>
+    </nav>
+    <br />
+    <div id="container">
+      <textarea class="import-area" id="import-area"></textarea>
+      <button id="btnImport" class="btn btn-primary btn-xs my-xs-btn btnImport" type="button">
+        <span class="glyphicon glyphicon-pencil"></span> Save
+      </button>
+      <div id="msg-acc-import"></div>
+    </div>
+    <script>
+      require("./../src/importRenderer");
+    </script>
+  </body>
+</html>

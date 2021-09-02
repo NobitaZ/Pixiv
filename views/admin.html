@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixiv Tools - Admin Panel</title>
+    <link rel="stylesheet" href="./bootstrap.min.css" />
+    <link rel="stylesheet" href="./admin-styles.css" />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-md bg-dark navbar-dark fixed-top">
+      <label class="navbar-brand">Pixiv Tools - Admin Panel</label>
+      <button
+        class="btn btn-secondary btn-xs my-xs-btn btnLogout ml-auto mr-1"
+        type="button"
+        onclick="logoutFunc()"
+      >
+        <span class="glyphicon glyphicon-pencil"> Logout </span>
+      </button>
+    </nav>
+    <section id="sideMenu" class="sideMenu">
+      <nav>
+        <button onclick="openTab(event, 'user')" class="tablinks active">User</button>
+        <!-- <button onclick="openTab(event, 'ip-address')" class="tablinks">IP</button> -->
+      </nav>
+    </section>
+    <section id="container" class="container">
+      <div id="user" class="tabcontent">
+        <input
+          type="text"
+          id="myInput"
+          onkeyup="searchFunc()"
+          placeholder="Search for username..."
+          title="Type in a name"
+        />
+
+        <table id="userTable" class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Username</th>
+              <th scope="col">MAC</th>
+              <th scope="col">IP Address 1</th>
+              <th scope="col">IP Address 2</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div id="ip-address" class="tabcontent" style="display: none">ip-address</div>
+    </section>
+    <script>
+      const remote = require("electron").remote;
+      const ipcRenderer = require("electron").ipcRenderer;
+      const path = require("path");
+      const User = require(path.join(__dirname, "./../models/User"));
+      const dbConnection = require(path.join(__dirname, "./../config/connection"));
+      const currentWindow = remote.getCurrentWindow();
+
+      //Connect to db
+      dbConnection.connectToServer();
+      let tableRef = document.getElementById("userTable").getElementsByTagName("tbody")[0];
+      function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+      }
+      function readUserInfo() {
+        User.find({})
+          .then((data) => {
+            if (data.length > 0) {
+              for (let index = 0; index < data.length; index++) {
+                const element = data[index];
+                var dataJson = JSON.stringify(element);
+                var str = "<th scope='row'>" + index.toString() + "</th>";
+                str += "<td>" + element.username + "</td>";
+                str += "<td>" + (typeof element.mac == "undefined" ? "" : element.mac) + "</td>";
+                str += "<td>" + (typeof element.ip1 == "undefined" ? "" : element.ip1) + "</td>";
+                str += "<td>" + (typeof element.ip2 == "undefined" ? "" : element.ip2) + "</td>";
+                str +=
+                  `<td><button class='btn btn-primary btn-xs my-xs-btn' type='button' onClick='editUserFunc
+                                        (` +
+                  dataJson +
+                  `)' >` +
+                  "<span class='glyphicon glyphicon-pencil'></span> Edit </button>";
+                str +=
+                  `<button style='margin-left:10px' class='btn btn-danger btn-xs my-xs-btn' type='button' onClick='deleteUserFunc("${element.username}")'>` +
+                  "<span class='glyphicon glyphicon-pencil'></span> Delete </button></td>";
+                tableRef.insertRow().innerHTML = str;
+              }
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+      readUserInfo();
+      function editUserFunc(userInfo) {
+        ipcRenderer.send("edit-user", userInfo);
+      }
+      function deleteUserFunc(username) {
+        const { remote } = require("electron");
+        const dialog = remote.dialog;
+        let WIN = remote.getCurrentWindow();
+        var options = {
+          type: "question",
+          buttons: ["&Yes", "&No"],
+          title: "Confirm Delete User",
+          normalizeAccessKeys: true,
+          message: `Do you really want to delete "${username}"?`,
+        };
+        dialog
+          .showMessageBox(WIN, options)
+          .then((choice) => {
+            if (choice.response === 0) {
+              ipcRenderer.send("delete-user", username);
+            }
+          })
+          .catch((err) => {
+            console.log("ERROR", err);
+          });
+      }
+      function searchFunc() {
+        let input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("userTable");
+        tr = table.getElementsByTagName("tr");
+        for (i = 0; i < tr.length; i++) {
+          td = tr[i].getElementsByTagName("td")[0];
+          if (td) {
+            txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+              tr[i].style.display = "";
+            } else {
+              tr[i].style.display = "none";
+            }
+          }
+        }
+      }
+      function logoutFunc() {
+        const { remote } = require("electron");
+        const dialog = remote.dialog;
+        let WIN = remote.getCurrentWindow();
+        var options = {
+          type: "question",
+          buttons: ["&Yes", "&No"],
+          title: "Confirm Logout",
+          normalizeAccessKeys: true,
+          message: "Do you really want to logout?",
+        };
+        dialog
+          .showMessageBox(WIN, options)
+          .then((choice) => {
+            if (choice.response === 0) {
+              ipcRenderer.send("logout", "logoutAdmin");
+            }
+          })
+          .catch((err) => {
+            console.log("ERROR", err);
+          });
+      }
+      ipcRenderer.on("user-modified", function (e, item) {
+        tableRef.innerHTML = "";
+        readUserInfo();
+      });
+      window.onscroll = function () {
+        stickyHeader();
+      };
+      var searchBar = document.getElementById("myInput");
+      var sticky = searchBar.offsetTop;
+      function stickyHeader() {
+        if (window.pageYOffset >= sticky) {
+          searchBar.classList.add("sticky");
+        } else {
+          searchBar.classList.remove("sticky");
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,65 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #eee;
+}
+.sticky {
+  position: fixed;
+  top: 60px;
+}
+.sideMenu {
+  background-color: #ddd;
+  max-width: 200px;
+  width: 100%;
+  position: absolute;
+  top: 64px;
+  bottom: 0;
+}
+.sideMenu nav button {
+  background-color: #ccc;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  display: block;
+}
+.sideMenu nav button:hover {
+  background-color: #bbb;
+}
+.sideMenu nav button.active {
+  background-color: #aaa;
+  border-left: 8px solid green;
+}
+.container {
+  max-width: 990px;
+  width: 100%;
+  position: absolute;
+  left: 200px;
+  top: 64px;
+  bottom: 0;
+}
+.hidetext {
+  -webkit-text-security: disc; /* Default */
+}
+.container {
+  overflow: visible !important;
+}
+#myInput {
+  /* background-image: url("/css/searchicon.png"); */
+  background-position: 10px 10px;
+  background-repeat: no-repeat;
+  width: 60%;
+  font-size: 16px;
+  padding: 12px 20px 12px 40px;
+  border: 3px solid #ddd;
+  border-radius: 1rem;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+/* .btnLogout {
+    margin-left: 830px;
+} */

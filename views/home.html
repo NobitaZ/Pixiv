@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="bootstrap.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Pixiv Crawl Tool</title>
+    <style>
+      .hidetext {
+        -webkit-text-security: disc; /* Default */
+      }
+      /* Style the tab */
+      .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+      }
+
+      /* Style the buttons that are used to open the tab content */
+      .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+      }
+
+      /* Change background color of buttons on hover */
+      .tab button:hover {
+        background-color: #ddd;
+      }
+
+      /* Create an active/current tablink class */
+      .tab button.active {
+        background-color: #ccc;
+      }
+
+      /* Style the tab content */
+      .tabcontent {
+        width: 99.6%;
+        display: none;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-right: none;
+        border-bottom: none;
+        z-index: 2;
+      }
+
+      /*Style the text area */
+      .textarea {
+        width: 100%;
+        height: 150px;
+        border: 1px solid #ccc;
+        border-radius: 0.25rem;
+      }
+      .import-area {
+        margin-left: 20px;
+        width: 550px;
+        height: 260px;
+        border: 1px solid #ccc;
+      }
+      .btnSave {
+        width: 100%;
+      }
+
+      .sticky {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1;
+      }
+      .input-links {
+        width: 300px;
+      }
+      .btnLinksSave {
+        margin-top: 10px;
+      }
+      /* .btnLogout { */
+      /* margin-left: 20px; */
+      /* float: right; */
+      /* } */
+      .loginName {
+        max-width: 200px;
+        widows: 100%;
+        margin-left: 480px;
+        color: #fff;
+      }
+      .tab-num {
+        margin-bottom: 20px;
+      }
+      .link-tab {
+        display: flex;
+      }
+      .folder-name {
+        margin-left: 20px;
+        width: 200px;
+        height: 260px;
+        border: 1px solid #ccc;
+      }
+      .tabnum {
+        width: 250px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="divTest"></div>
+    <nav class="navbar navbar-expand-md bg-dark navbar-dark justify-content-end">
+      <label class="navbar-brand">Pixiv Crawl Tool</label>
+      <span class="loginName text-right"></span>
+      <button
+        class="btn btn-secondary btn-xs my-xs-btn btnLogout ml-auto mr-1"
+        type="button"
+        onclick="logoutFunc()"
+      >
+        <span class="glyphicon glyphicon-pencil"> Logout </span>
+      </button>
+    </nav>
+    <br />
+    <!-- Tab links -->
+    <div class="tab" id="tab">
+      <button class="tablinks active" onclick="openTab(event, 'account')">Accounts</button>
+      <button class="tablinks" onclick="openTab(event, 'links')">Links</button>
+      <button class="tablinks" onclick="openTab(event, 'logs')">Logs</button>
+    </div>
+    <div class="col-sm-12 text-right">
+      <button
+        class="btn btn-warning btn-xs my-xs-btn btnImport"
+        type="button"
+        onclick="importFunc()"
+      >
+        <span class="glyphicon glyphicon-pencil"> Import Account </span>
+      </button>
+    </div>
+    <div id="account" class="tabcontent" style="display: block">
+      <table id="userTable" class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Account</th>
+            <th scope="col">Proxy</th>
+            <th scope="col">Proxy Username</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="links" class="tabcontent">
+      <h3>Config</h3>
+      <div class="tab-num">
+        <span>Number of tab</span>
+        <input
+          type="number"
+          max="60"
+          min="1"
+          class="tabnum"
+          id="tabnum"
+          placeholder="max 60, recommend 10~20"
+        />
+      </div>
+      <div class="link-tab">
+        <div>
+          <h3>Link list</h3>
+          <textarea
+            class="import-area"
+            id="link-area"
+            placeholder="link,page or page range. Eg: http://example.com,1-10"
+          ></textarea>
+        </div>
+        <div>
+          <h3>Folder list</h3>
+          <textarea class="folder-name" id="folder-area"></textarea>
+        </div>
+      </div>
+      <button
+        class="btn btn-primary btn-xs my-xs-btn btnLinksSave"
+        type="button"
+        onclick="saveLinksFunc()"
+      >
+        <span class="glyphicon glyphicon-pencil"></span> Save
+      </button>
+      <div style="margin-top: 10px" id="msg-cate"></div>
+    </div>
+
+    <div id="logs" class="tabcontent">
+      <h3>Logs</h3>
+      <ul style="list-style-type: circle"></ul>
+    </div>
+
+    <script>
+      const stringify = require("csv-stringify");
+      const parse = require("csv-parse");
+      const electron = require("electron");
+      const log = require("electron-log");
+      const { ipcRenderer, dialog } = electron;
+      const path = require("path");
+      const fs = require("fs");
+      let tableRef = document.getElementById("userTable").getElementsByTagName("tbody")[0];
+      let ul = document.querySelector("ul");
+      let linksInput = document.getElementById("input-links");
+      const msgDiv = document.querySelector("#msg-product");
+      const msgCate = document.querySelector("#msg-cate");
+      const inpTextArea = document.querySelector("#link-area");
+      const folderTextArea = document.querySelector("#folder-area");
+      const tabNum = document.querySelector("#tabnum");
+      tabNum.defaultValue = 10;
+      const linksPath =
+        process.env.NODE_ENV === "development"
+          ? "./data/links.csv"
+          : path.join(process.resourcesPath, "data/links.csv");
+      const folderPath =
+        process.env.NODE_ENV === "development"
+          ? "./data/folders.csv"
+          : path.join(process.resourcesPath, "data/folders.csv");
+      ipcRenderer.on("logs", function (e, item) {
+        const li = document.createElement("li");
+        const itemText = document.createTextNode(item);
+        li.appendChild(itemText);
+        ul.appendChild(li);
+      });
+      ipcRenderer.on("reload-acc-info", function (e, item) {
+        readAccInfo();
+      });
+      function readAccInfo() {
+        try {
+          const infoPath =
+            process.env.NODE_ENV === "development"
+              ? "./data/info.csv"
+              : path.join(process.resourcesPath, "data/info.csv");
+          fs.readFile(infoPath, "utf8", function (err, data) {
+            if (err) {
+              log.error(err);
+              throw err;
+            }
+            parse(data, { columns: false, trim: true }, function (err, rows) {
+              if (err) {
+                log.error(err);
+                throw err;
+              }
+              tableRef.innerHTML = "";
+              for (let index = 0; index < rows.length; index++) {
+                if (index != 0) continue;
+                const elements = rows[index];
+                var dataJson = JSON.stringify(elements);
+                var str = "<th scope='row'>" + index.toString() + "</th>";
+                elements.forEach((element, index) => {
+                  if (index == 1 || index == 4) {
+                  } else {
+                    str += "<td>" + element + "</td>";
+                  }
+                });
+                str +=
+                  `<td><button class='btn btn-primary btn-xs my-xs-btn' type='button' onClick='selectFunc(` +
+                  dataJson +
+                  `)' >` +
+                  "<span class='glyphicon glyphicon-pencil'></span> Crawl </button>";
+                // str +=
+                //   `<button style='margin-left:10px;' class='btn btn-primary btn-xs my-xs-btn' type='button' onClick='openFunc(` +
+                //   dataJson +
+                //   `)' >` +
+                //   "<span class='glyphicon glyphicon-pencil'></span> Open </button></td>";
+                tableRef.insertRow().innerHTML = str;
+              }
+            });
+          });
+        } catch (err) {
+          log.error(err);
+          return;
+        }
+      }
+      readAccInfo();
+
+      //read links
+      fs.readFile(linksPath, "utf8", function (err, data) {
+        if (err) {
+          log.error(err);
+          throw err;
+        }
+        parse(data, { columns: false, trim: true }, function (err, rows) {
+          if (err) {
+            log.error(err);
+            throw err;
+          }
+          rows.forEach((element) => {
+            inpTextArea.value += element + "\n";
+          });
+        });
+      });
+
+      //read folder
+      fs.readFile(folderPath, "utf8", function (err, data) {
+        if (err) {
+          log.error(err);
+          throw err;
+        }
+        parse(data, { columns: false, trim: true }, function (err, rows) {
+          if (err) {
+            log.error(err);
+            throw err;
+          }
+          rows.forEach((element) => {
+            folderTextArea.value += element + "\n";
+          });
+        });
+      });
+
+      function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+      }
+
+      function selectFunc(arrayData) {
+        if (arrayData[0] == "" || arrayData[1] == "") {
+          const errMsgBox = dialog.showErrorBox("Username or password incorrect !!!", "");
+        }
+        arrayData.push(tabNum.value);
+        ipcRenderer.send("crawl-clicked", arrayData);
+      }
+
+      function saveLinksFunc() {
+        let columns = {
+          product: "Product",
+        };
+        let textSplit = inpTextArea.value.split("\n").filter((v) => {
+          return v != "";
+        });
+        let folderSplit = folderTextArea.value.split("\n").filter((v) => {
+          return v != "";
+        });
+        if (textSplit.length != folderSplit.length) {
+          msgCate.style.display = "block";
+          msgCate.className = "alert alert-danger alert-dismissible show";
+          msgCate.innerHTML = "Links vs folders are not match";
+          setTimeout(() => {
+            msgCate.style.display = "none";
+          }, 2000);
+          return;
+        }
+        let dataLink = [];
+        let dataFolder = [];
+        for (let index = 0; index < textSplit.length; index++) {
+          const row = textSplit[index].split(",");
+          if (row[1] == "" || typeof row[1] === "undefined") {
+            msgCate.style.display = "block";
+            msgCate.className = "alert alert-danger alert-dismissible show";
+            msgCate.innerHTML = "Can not leave page blank";
+            setTimeout(() => {
+              msgCate.style.display = "none";
+            }, 2000);
+            return;
+          }
+          if (row != "") {
+            dataLink.push(row);
+          }
+        }
+        for (let i = 0; i < folderSplit.length; i++) {
+          const row = folderSplit[i].split(",");
+          if (row != "") {
+            dataFolder.push(row);
+          }
+        }
+        let dataLinkOutput = dataLink.filter((v) => {
+          return v != "";
+        });
+        let dataFolderOutput = dataFolder.filter((v) => {
+          return v != "";
+        });
+        let isSuccess = false;
+        stringify(dataLinkOutput, function (err, output) {
+          fs.writeFile(linksPath, output, function (err) {
+            if (err) {
+              isSuccess = false;
+              throw err;
+            }
+            isSuccess = true;
+          });
+        });
+        stringify(dataFolderOutput, function (err, output) {
+          fs.writeFile(folderPath, output, function (err) {
+            if (err) {
+              isSuccess = false;
+              throw err;
+            }
+            isSuccess = true;
+          });
+        });
+        if (isSuccess) {
+          msgCate.style.display = "block";
+          msgCate.className = "alert alert-success alert-dismissible show";
+          msgCate.innerHTML = "Successfully Saved";
+          setTimeout(() => {
+            msgCate.style.display = "none";
+          }, 2000);
+        }
+      }
+
+      function importFunc() {
+        ipcRenderer.send("import-clicked", "openImportWindow");
+      }
+      window.onscroll = function () {
+        stickyHeader();
+      };
+
+      var navbar = document.getElementById("tab");
+      var sticky = navbar.offsetTop;
+      function stickyHeader() {
+        if (window.pageYOffset >= sticky) {
+          navbar.classList.add("sticky");
+        } else {
+          navbar.classList.remove("sticky");
+        }
+      }
+
+      function logoutFunc() {
+        const { remote } = require("electron");
+        const dialog = remote.dialog;
+        let WIN = remote.getCurrentWindow();
+        var options = {
+          type: "question",
+          buttons: ["&Yes", "&No"],
+          title: "Confirm Logout",
+          normalizeAccessKeys: true,
+          message: "Do you really want to logout?",
+        };
+        dialog
+          .showMessageBox(WIN, options)
+          .then((choice) => {
+            if (choice.response === 0) {
+              ipcRenderer.send("logout", "logout");
+            }
+          })
+          .catch((err) => {
+            console.log("ERROR", err);
+          });
+      }
+
+      function openFunc(data) {
+        ipcRenderer.send("open-account", data);
+      }
+
+      function stringHandle(str, department = "", splitStr = "\n", type = "") {
+        let data = [];
+        if (str.trim() != "") {
+          let textSplit = str
+            .split(splitStr)
+            .filter((v) => {
+              return v != "";
+            })
+            .map((v) => {
+              return v.trim();
+            });
+          if (type != "links") {
+            textSplit.unshift(department);
+          }
+          data.push(textSplit);
+        }
+        return data;
+      }
+    </script>
+  </body>
+</html>

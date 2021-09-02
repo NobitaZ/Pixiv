@@ -1,0 +1,7 @@
+.container {
+  height: 450px;
+  width: auto;
+  overflow: auto;
+  display: flex;
+  flex-direction: column-reverse;
+}
