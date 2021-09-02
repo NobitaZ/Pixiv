@@ -1,9 +1,0 @@
-2021/09/03-05:10:09.064 7d60 Reusing MANIFEST E:\Project\NodeJs Project\pixiv\user_data\Default\IndexedDB\https_www.pixiv.net_0.indexeddb.leveldb/MANIFEST-000001
-2021/09/03-05:10:09.065 7d60 Recovering log #264
-2021/09/03-05:10:09.070 7d60 Reusing old log E:\Project\NodeJs Project\pixiv\user_data\Default\IndexedDB\https_www.pixiv.net_0.indexeddb.leveldb/000264.log 
-2021/09/03-05:10:21.272 9b98 Compacting 1@1 + 1@2 files
-2021/09/03-05:10:21.341 9b98 Generated table #267@1: 144 keys, 184286 bytes
-2021/09/03-05:10:21.341 9b98 Compacted 1@1 + 1@2 files => 184286 bytes
-2021/09/03-05:10:21.391 9b98 compacted to: files[ 0 0 1 0 0 0 0 ]
-2021/09/03-05:10:21.391 9b98 Delete type=2 #262
-2021/09/03-05:10:21.391 9b98 Delete type=2 #265
