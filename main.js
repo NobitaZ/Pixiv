@@ -9,7 +9,6 @@ const bcrypt = require("bcryptjs");
 const User = require(path.join(__dirname, "models/User"));
 const { app, BrowserWindow, Menu, ipcMain, remote, dialog, session } = require("electron");
 const fs = require("fs");
-const parse = require("csv-parse");
 const parseSync = require("csv-parse/lib/sync");
 const WindowsToaster = require("node-notifier").WindowsToaster;
 const myFunc = require(path.join(__dirname, "./src/windowRenderer"));
@@ -22,7 +21,6 @@ const common = require("./helpers/common");
 const { info } = require("electron-log");
 const axios = require("axios");
 const stringify = require("csv-stringify");
-// const mainProcessed = require("./MainProcess");
 
 // puppeteer.use(
 //   RecaptchaPlugin({
@@ -405,9 +403,13 @@ ipcMain.on("open-account", function (e, data) {
 
 async function mainProcess(arrAcc) {
   let dir = "./Images";
+  let user_data = "./user_data";
   if (!fs.existsSync(dir)) {
     await homeWindow.webContents.send("logs", `Creating folder Images`);
     fs.mkdirSync(dir);
+  }
+  if (!fs.existsSync(user_data)) {
+    fs.mkdirSync(user_data);
   }
   const accUsername = arrAcc[0];
   const accPassword = arrAcc[1];

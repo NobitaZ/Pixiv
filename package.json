@@ -11,7 +11,7 @@
         "github"
       ],
       "target": "nsis",
-      "icon": "icon.svg"
+      "icon": "icon.jpg"
     },
     "extraResources": [
       {

@@ -5,3 +5,4 @@ chrome/
 dist/
 logs/
 .env
+user_data/
