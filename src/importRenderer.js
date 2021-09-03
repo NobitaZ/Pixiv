@@ -39,7 +39,7 @@ btnImport.addEventListener("click", function (e) {
     let data = [];
     for (let index = 0; index < textSplit.length; index++) {
       if (index != 0) continue;
-      const row = textSplit[index].split("	");
+      const row = textSplit[index].split(",");
       if (row != "") {
         if (typeof row[2] == "undefined") {
           row[2] = "";
