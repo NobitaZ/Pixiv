@@ -89,6 +89,7 @@
         color: #fff;
       }
       .tab-num {
+        position: relative;
         margin-bottom: 20px;
       }
       .link-tab {
@@ -102,6 +103,12 @@
       }
       .tabnum {
         width: 250px;
+      }
+      .path-select {
+        position: absolute;
+        display: inline-block;
+        top: 0;
+        right: 0;
       }
     </style>
   </head>
@@ -162,6 +169,11 @@
           id="tabnum"
           placeholder="max 60, recommend 10~20"
         />
+        <div class="path-select">
+          <span><strong>Save to </strong></span>
+          <span id="savePath"></span>
+          <button id="select-folder">Select Folder</button>
+        </div>
       </div>
       <div class="link-tab">
         <div>
@@ -208,6 +220,9 @@
       const inpTextArea = document.querySelector("#link-area");
       const folderTextArea = document.querySelector("#folder-area");
       const tabNum = document.querySelector("#tabnum");
+      const selectFolder = document.querySelector("#select-folder");
+      const savePath = document.querySelector("#savePath");
+      let pathToSave = "";
       tabNum.defaultValue = 10;
       const linksPath =
         process.env.NODE_ENV === "development"
@@ -324,10 +339,8 @@
       }
 
       function selectFunc(arrayData) {
-        if (arrayData[0] == "" || arrayData[1] == "") {
-          const errMsgBox = dialog.showErrorBox("Username or password incorrect !!!", "");
-        }
         arrayData.push(tabNum.value);
+        arrayData.push(pathToSave);
         ipcRenderer.send("crawl-clicked", arrayData);
       }
 
@@ -470,6 +483,13 @@
         }
         return data;
       }
+      selectFolder.addEventListener("click", function (event) {
+        ipcRenderer.send("open-dir-dialog");
+      });
+      ipcRenderer.on("selected-dir", function (event, path) {
+        savePath.innerHTML = `${path}`;
+        pathToSave = path;
+      });
     </script>
   </body>
 </html>

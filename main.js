@@ -229,8 +229,8 @@ function connectDB(dbConnectionStr) {
 //--------------------------------------------------------------------
 if (process.env.NODE_ENV === "development") {
   // app.on("ready", createWindow);
-  // app.on("ready", createHomeWindow);
-  app.on("ready", createAdminWindow);
+  app.on("ready", createHomeWindow);
+  // app.on("ready", createAdminWindow);
 } else {
   app.on("ready", createUpdateWindow);
 }
@@ -379,24 +379,54 @@ ipcMain.on("open-account", function (e, data) {
   }
 });
 
+ipcMain.on("open-dir-dialog", function (e) {
+  dialog
+    .showOpenDialog(mainWindow, {
+      properties: ["openDirectory"],
+    })
+    .then((result) => {
+      e.sender.send("selected-dir", result.filePaths);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+});
+
 async function mainProcess(arrAcc) {
-  let dir = "./Images";
-  let user_data = "./user_data";
-  if (!fs.existsSync(dir)) {
-    await homeWindow.webContents.send("logs", `Creating folder Images`);
-    fs.mkdirSync(dir);
-  }
-  if (!fs.existsSync(user_data)) {
-    fs.mkdirSync(user_data);
-  }
   const accUsername = arrAcc[0];
   const accPassword = arrAcc[1];
   const proxyIP = arrAcc[2];
   const proxyUser = arrAcc[3];
   const proxyPass = arrAcc[4];
   const tabNum = arrAcc[5];
+  const pathToSave = arrAcc[6];
+  if (pathToSave == "") {
+    dialog.showErrorBox("Please choose folder to save images", "");
+    return;
+  }
+  if (accUsername == "" || accPassword == "") {
+    dialog.showErrorBox("Please email or password is incorrect", "");
+    return;
+  }
   const regexCheckLink =
     /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/gm;
+  let user_data = "./user_data";
+  if (!fs.existsSync(user_data)) {
+    fs.mkdirSync(user_data);
+  }
+  if (pathToSave == "") {
+    let dir = "./Images";
+    if (!fs.existsSync(dir)) {
+      await homeWindow.webContents.send("logs", `Creating folder Images`);
+      fs.mkdirSync(dir);
+    }
+  } else {
+    let dir = `${pathToSave}\\Images`;
+    if (!fs.existsSync(dir)) {
+      await homeWindow.webContents.send("logs", `Creating folder Images`);
+      fs.mkdirSync(dir);
+    }
+  }
   // Read links
   const linksPath =
     process.env.NODE_ENV === "development"
@@ -502,7 +532,7 @@ async function mainProcess(arrAcc) {
   }
   for (let i = 0; i < arrLinks.length; i++) {
     let folderName = arrFolders[i];
-    let innerDir = `./Images/${folderName}`;
+    let innerDir = `${pathToSave}\\Images\\${folderName}`;
     try {
       if (!fs.existsSync(innerDir)) {
         await homeWindow.webContents.send("logs", `Creating folder ${folderName}`);
@@ -530,10 +560,10 @@ async function mainProcess(arrAcc) {
     log.info("lastPage: " + lastPage);
     if (typeof lastPage == "undefined" && firstPage) {
       log.info("goto: " + objLink + "&p=" + firstPage);
-      await crawlByPage(browser, page, objLink, firstPage, tabNum, folderName, arrId, idPath);
+      await crawlByPage(browser, page, objLink, firstPage, tabNum, innerDir, arrId, idPath);
     } else if (firstPage && lastPage) {
       for (let j = firstPage; j <= lastPage; j++) {
-        await crawlByPage(browser, page, objLink, j, tabNum, folderName, arrId, idPath);
+        await crawlByPage(browser, page, objLink, j, tabNum, innerDir, arrId, idPath);
       }
     }
   }
@@ -618,7 +648,8 @@ async function crawlByPage(browser, page, link, pageNum, tabNum, folder, arrId, 
 // DOWNLOAD IMG
 //----------------------------------
 async function processDownloadImg(browser, page, url, folder) {
-  const imgLocation = `${process.cwd()}\\Images\\${folder}`;
+  // const imgLocation = `${process.cwd()}\\Images\\${folder}`;
+  const imgLocation = folder;
   // const imgID = url.split("/").pop();
   // console.log(imgID);
   await page.goto(url);
