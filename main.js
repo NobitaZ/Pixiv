@@ -559,7 +559,6 @@ async function mainProcess(arrAcc) {
     log.info("firstPage: " + firstPage);
     log.info("lastPage: " + lastPage);
     if (typeof lastPage == "undefined" && firstPage) {
-      log.info("goto: " + objLink + "&p=" + firstPage);
       await crawlByPage(browser, page, objLink, firstPage, tabNum, innerDir, arrId, idPath);
     } else if (firstPage && lastPage) {
       for (let j = firstPage; j <= lastPage; j++) {
@@ -576,6 +575,7 @@ async function mainProcess(arrAcc) {
       appName: "HaNguyen's Tools",
       title: "Pixiv Crawl Tool",
       message: "Crawl Completed!",
+      icon: path.join(__dirname, "icon.jpg"),
       sound: true,
     },
     function (err, response) {
@@ -635,7 +635,7 @@ async function crawlByPage(browser, page, link, pageNum, tabNum, folder, arrId, 
   for (let i = 0; i < arrBlock6Links.length; i++) {
     await Promise.all(
       arrBlock6Links[i].map((url) => {
-        page.setDefaultNavigationTimeout(30000);
+        page.setDefaultNavigationTimeout(60000);
         return browser.newPage().then(async (page) => {
           await processDownloadImg(browser, page, url, folder).catch((err) => log.error(err));
         });
@@ -648,11 +648,10 @@ async function crawlByPage(browser, page, link, pageNum, tabNum, folder, arrId, 
 // DOWNLOAD IMG
 //----------------------------------
 async function processDownloadImg(browser, page, url, folder) {
-  // const imgLocation = `${process.cwd()}\\Images\\${folder}`;
   const imgLocation = folder;
-  // const imgID = url.split("/").pop();
-  // console.log(imgID);
-  await page.goto(url);
+  await page.goto(url, {
+    timeout: 90000,
+  });
   let isMultiImg;
   try {
     isMultiImg = await page.$eval('div[aria-label="Preview"]', (el) => el.textContent);
@@ -661,9 +660,8 @@ async function processDownloadImg(browser, page, url, folder) {
   }
   if (isMultiImg) {
     log.info("multiple img found");
-    await myFunc.timeOutFunc(1000);
     await page.click('a[href*="img-original"]');
-    await myFunc.timeOutFunc(2000);
+    await myFunc.timeOutFunc(3000);
   }
   const arrImgLink = await page.$$eval('a[href*="img-original"]', (el) => el.map((v) => v.href));
   await homeWindow.webContents.send("logs", "Downloading images...");
