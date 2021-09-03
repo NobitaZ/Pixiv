@@ -1,4 +1,3 @@
-const electron = require("electron").remote;
 const stringify = require("csv-stringify");
 // const { dialog } = electron;
 const { ipcRenderer, dialog } = require("electron");
@@ -20,13 +19,12 @@ let userArr = [];
 userAcc.forEach((v) => {
   userArr.push(v[0]);
 });
-log.info(userArr);
 const btnImport = document.getElementById("btnImport");
 btnImport.addEventListener("click", function (e) {
   e.preventDefault;
   const inpTextArea = document.querySelector("#import-area").value;
   if (inpTextArea == null || inpTextArea == "" || JSON.stringify(inpTextArea) == "{}") {
-    const errMsgBox = dialog.showErrorBox("Account can not be empty !!!", "");
+    // const errMsgBox = dialog.showErrorBox("Account can not be empty !!!", "");
   } else {
     let columns = {
       account: "Account",
@@ -43,6 +41,9 @@ btnImport.addEventListener("click", function (e) {
       if (index != 0) continue;
       const row = textSplit[index].split("	");
       if (row != "") {
+        if (typeof row[2] == "undefined") {
+          row[2] = "";
+        }
         if (typeof row[3] == "undefined" || typeof row[4] == "undefined") {
           row[3] = "";
           row[4] = "";
@@ -50,13 +51,8 @@ btnImport.addEventListener("click", function (e) {
         data.push(row);
       }
     }
-    //filter duplicated accounts
-    let dataOutput = data.filter((v) => {
-      return !userArr.includes(v[0]);
-    });
-    log.info(dataOutput);
-    stringify(dataOutput, function (err, output) {
-      fs.writeFile(infoPath, output, { flag: "a" }, function (err) {
+    stringify(data, function (err, output) {
+      fs.writeFile(infoPath, output, function (err) {
         if (err) {
           throw err;
         }

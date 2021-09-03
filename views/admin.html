@@ -57,8 +57,10 @@
       const User = require(path.join(__dirname, "./../models/User"));
       const dbConnection = require(path.join(__dirname, "./../config/connection"));
       const currentWindow = remote.getCurrentWindow();
+      const log = require("electron-log");
 
       //Connect to db
+      log.info("here");
       dbConnection.connectToServer();
       let tableRef = document.getElementById("userTable").getElementsByTagName("tbody")[0];
       function openTab(evt, tabName) {

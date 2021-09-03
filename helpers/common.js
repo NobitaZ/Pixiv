@@ -5,9 +5,19 @@ const mongoose = require("mongoose");
 // BROWSER
 //--------------------------------------------------------------------
 exports.openBrowser = async (proxy) => {
-  let ip = proxy.split(":")[0];
-  let port = "";
-  typeof proxy.split(":")[1] == "undefined" ? (port = "4444") : (port = proxy.split(":")[1]);
+  let browserArgs;
+  if (proxy != "") {
+    let ip = proxy.split(":")[0];
+    let port = "";
+    typeof proxy.split(":")[1] == "undefined" ? (port = "4444") : (port = proxy.split(":")[1]);
+    browserArgs = [
+      `--proxy-server=http://${ip}:${port}`,
+      "--window-size=1366,768",
+      "--disable-web-security",
+    ];
+  } else {
+    browserArgs = ["--window-size=1366,768", "--disable-web-security"];
+  }
 
   const chromePath =
     process.env.NODE_ENV === "development"
@@ -23,11 +33,12 @@ exports.openBrowser = async (proxy) => {
     defaultViewport: null,
     ignoreHTTPSErrors: true,
     slowMo: 30,
-    args: [
-      `--proxy-server=http://${ip}:${port}`,
-      "--window-size=1366,768",
-      "--disable-web-security",
-    ],
+    args: browserArgs,
+    // args: [
+    //   `--proxy-server=http://${ip}:${port}`,
+    //   "--window-size=1366,768",
+    //   "--disable-web-security",
+    // ],
     //--disable-web-security "--window-size=1500,900"
   });
   console.log("Browser opened");

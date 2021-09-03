@@ -1,6 +1,6 @@
 require("dotenv").config({ path: __dirname + "/.env" });
 const puppeteer = require("puppeteer-extra");
-// const RecaptchaPlugin = require("puppeteer-extra-plugin-recaptcha");
+const RecaptchaPlugin = require("puppeteer-extra-plugin-recaptcha");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 const path = require("path");
@@ -22,12 +22,12 @@ const { info } = require("electron-log");
 const axios = require("axios");
 const stringify = require("csv-stringify");
 
-// puppeteer.use(
-//   RecaptchaPlugin({
-//     provider: { id: "2captcha", token: process.env.CAPTCHA_KEY },
-//     visualFeedback: true,
-//   })
-// );
+puppeteer.use(
+  RecaptchaPlugin({
+    provider: { id: "2captcha", token: process.env.CAPTCHA_KEY },
+    visualFeedback: true,
+  })
+);
 puppeteer.use(AdblockerPlugin());
 puppeteer.use(StealthPlugin());
 
@@ -168,29 +168,6 @@ function createUpdateWindow() {
   });
 }
 
-function createUploadWindow() {
-  uploadWindow = new BrowserWindow({
-    width: 1024,
-    height: 900,
-    resizable: false,
-    darkTheme: true,
-    title: "Pixiv Crawl Tool",
-    webPreferences: {
-      nodeIntegration: true,
-      enableRemoteModule: true,
-      contextIsolation: false,
-    },
-    parent: homeWindow,
-  });
-  uploadWindow.removeMenu();
-  uploadWindow.loadFile("./views/upload.html");
-  uploadWindow.on("close", function () {
-    uploadWindow = null;
-  });
-  const mainMenu = Menu.buildFromTemplate(myFunc.mainMenuTemplate(app));
-  Menu.setApplicationMenu(mainMenu);
-}
-
 function createImportWindow() {
   importWindow = new BrowserWindow({
     width: 600,
@@ -252,7 +229,8 @@ function connectDB(dbConnectionStr) {
 //--------------------------------------------------------------------
 if (process.env.NODE_ENV === "development") {
   // app.on("ready", createWindow);
-  app.on("ready", createHomeWindow);
+  // app.on("ready", createHomeWindow);
+  app.on("ready", createAdminWindow);
 } else {
   app.on("ready", createUpdateWindow);
 }
@@ -445,12 +423,7 @@ async function mainProcess(arrAcc) {
     process.env.NODE_ENV === "development"
       ? "./data/id.csv"
       : path.join(process.resourcesPath, "data/id.csv");
-  // const arrIdFromFile = fs.readFileSync(idPath, "utf-8");
   const arrId = fs.readFileSync(idPath, "utf-8");
-  // let arrId = parseSync(arrIdFromFile, {
-  // columns: false,
-  //   skip_empty_lines: true,
-  // });
   //Browser handlers
   const { browser, page } = await common.openBrowser(proxyIP);
   await homeWindow.webContents.send("logs", "Browser opened");
@@ -478,8 +451,27 @@ async function mainProcess(arrAcc) {
     await page.type("input[autocomplete='current-password'", accPassword);
     await myFunc.timeOutFunc(1000);
     await page.keyboard.press("Enter");
-    await page.waitForNavigation();
     await myFunc.timeOutFunc(3000);
+    try {
+      await page.waitForNavigation({ timeout: 5000 });
+    } catch (e) {}
+    const siteCapt = await page.evaluate(() => {
+      let grecaptcha = document.getElementById("g-recaptcha-response-2");
+      let result = false;
+      grecaptcha != null ? (result = true) : (result = false);
+      return result;
+    });
+    if (siteCapt) {
+      console.log("resolving siteCapt");
+      await homeWindow.webContents.send("logs", "Resolving captcha...");
+      await page.solveRecaptchas();
+      await homeWindow.webContents.send("logs", "Resolved captcha");
+      console.log("resolved siteCapt");
+      await myFunc.timeOutFunc(1000);
+      await page.keyboard.press("Enter");
+      await page.waitForNavigation();
+    }
+
     let confirmEmail;
     try {
       confirmEmail = await page.$eval(

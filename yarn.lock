@@ -1868,7 +1868,7 @@ memory-pager@^1.0.2:
   resolved "https://registry.yarnpkg.com/memory-pager/-/memory-pager-1.5.0.tgz#d8751655d22d384682741c972f2c3d6dfa3e66b5"
   integrity sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==
 
-merge-deep@^3.0.1:
+merge-deep@^3.0.1, merge-deep@^3.0.2:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/merge-deep/-/merge-deep-3.0.3.tgz#1a2b2ae926da8b2ae93a0ac15d90cd1922766003"
   integrity sha512-qtmzAS6t6grwEkNrunqTBdn0qKwFgNWvlxUbAV8es9M7Ot1EbyApytCnvE0jALPa46ZpKDUo527kKiaWplmlFA==
@@ -2211,6 +2211,15 @@ puppeteer-extra-plugin-adblocker@^2.11.11:
     "@types/chrome" "0.0.91"
     debug "^4.1.1"
     node-fetch "^2.6.0"
+    puppeteer-extra-plugin "^3.1.9"
+
+puppeteer-extra-plugin-recaptcha@^3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/puppeteer-extra-plugin-recaptcha/-/puppeteer-extra-plugin-recaptcha-3.4.0.tgz#ae188dec3b033382be102ade7b844452d2759d19"
+  integrity sha512-JgQfIgkZNt5GKekQBzYLCxy0rUGYunscJ5paqI7tYY9xSNDI3AL5zKuKWaSENG2g54TNgCt85+wUl+fZZWHytw==
+  dependencies:
+    debug "^4.1.1"
+    merge-deep "^3.0.2"
     puppeteer-extra-plugin "^3.1.9"
 
 puppeteer-extra-plugin-stealth@^2.7.8:
