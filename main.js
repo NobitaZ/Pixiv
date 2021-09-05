@@ -322,7 +322,7 @@ ipcMain.on("crawl-clicked", function (e, arrItems) {
     mainProcess(arrItems);
   } catch (err) {
     log.error(err);
-    loogger.error(err.stack, loggerObj);
+    logger.error(err.stack, loggerObj);
   }
 });
 
@@ -406,6 +406,10 @@ async function mainProcess(arrAcc) {
   }
   if (accUsername == "" || accPassword == "") {
     dialog.showErrorBox("Please email or password is incorrect", "");
+    return;
+  }
+  if (tabNum < 1 || tabNum > 60) {
+    dialog.showErrorBox("Number of tab is incorrect", "");
     return;
   }
   const regexCheckLink =
@@ -556,13 +560,23 @@ async function mainProcess(arrAcc) {
     if (!objLink.includes("?order=popular_d")) {
       objLink = objLink.concat("?order=popular_d");
     }
-    log.info("firstPage: " + firstPage);
-    log.info("lastPage: " + lastPage);
     if (typeof lastPage == "undefined" && firstPage) {
-      await crawlByPage(browser, page, objLink, firstPage, tabNum, innerDir, arrId, idPath);
+      await crawlByPage(browser, page, objLink, firstPage, tabNum, innerDir, arrId, idPath).catch(
+        (err) => {
+          log.error(err.stack);
+          logger.error(err.message, loggerObj);
+          return;
+        }
+      );
     } else if (firstPage && lastPage) {
       for (let j = firstPage; j <= lastPage; j++) {
-        await crawlByPage(browser, page, objLink, j, tabNum, innerDir, arrId, idPath);
+        await crawlByPage(browser, page, objLink, j, tabNum, innerDir, arrId, idPath).catch(
+          (err) => {
+            log.error(err.stack);
+            logger.error(err.message, loggerObj);
+            return;
+          }
+        );
       }
     }
   }
@@ -580,8 +594,6 @@ async function mainProcess(arrAcc) {
     },
     function (err, response) {
       if (err) log.error(err);
-      // Response is response from notification
-      //console.log("responded...");
     }
   );
 }
@@ -591,19 +603,31 @@ async function mainProcess(arrAcc) {
 //----------------------------------
 async function crawlByPage(browser, page, link, pageNum, tabNum, folder, arrId, idPath) {
   tabNum = parseInt(tabNum);
-  await page.goto(link + "&p=" + pageNum);
+  await homeWindow.webContents.send("logs", `Loading page ${pageNum}`);
+  await page
+    .goto(link + "&p=" + pageNum, { timeout: 60000 })
+    .then(() => {
+      log.info(`load page success`);
+    })
+    .catch((err) => {
+      log.error(`load page error: ${err}`);
+      logger.error(`load page error: ${err.message}`, loggerObj);
+      return;
+    });
   await scrollToBottom(page);
-  await myFunc.timeOutFunc(1000);
+  await myFunc.timeOutFunc(500);
   let arrImgLinkList = await page.evaluate(() => {
     let arrImg = document.querySelectorAll('img[src*="250x250"]');
     arrImg = [...arrImg];
     let arrImgLink = arrImg.map((v) => v.parentElement.parentElement.href);
     return arrImgLink;
   });
+  if (arrImgLinkList.length == 0) {
+    await homeWindow.webContents.send("logs", `Can not found product links`);
+    return;
+  }
   let newArrImgLink = [];
   let arrNewId = [];
-  // console.log(arrId);
-  let newArrId = arrId.split("\n");
   for (let i = 0; i < arrImgLinkList.length; i++) {
     const imgId = arrImgLinkList[i].split("/").pop();
     if (arrId.includes(imgId)) {
@@ -619,7 +643,6 @@ async function crawlByPage(browser, page, link, pageNum, tabNum, folder, arrId, 
       inputArr.push(row);
     }
   }
-  console.log(inputArr);
   if (inputArr.length > 0) {
     stringify(inputArr, function (err, output) {
       fs.writeFile(idPath, output, { flag: "a" }, function (err) {
@@ -631,15 +654,32 @@ async function crawlByPage(browser, page, link, pageNum, tabNum, folder, arrId, 
       });
     });
   }
-  let arrBlock6Links = array_chunks(newArrImgLink, tabNum);
-  for (let i = 0; i < arrBlock6Links.length; i++) {
-    await Promise.all(
-      arrBlock6Links[i].map((url) => {
-        page.setDefaultNavigationTimeout(60000);
-        return browser.newPage().then(async (page) => {
-          await processDownloadImg(browser, page, url, folder).catch((err) => log.error(err));
-        });
-      })
+
+  if (newArrImgLink.length != 0) {
+    await homeWindow.webContents.send("logs", `Found ${newArrImgLink.length} images`);
+    await homeWindow.webContents.send("logs", `Downloading images from page ${pageNum}`);
+    let arrBlock6Links = array_chunks(newArrImgLink, tabNum);
+    for (let i = 0; i < arrBlock6Links.length; i++) {
+      await Promise.all(
+        arrBlock6Links[i].map((url) => {
+          page.setDefaultNavigationTimeout(60000);
+          return browser.newPage().then(async (page) => {
+            await processDownloadImg(page, url, folder).catch((err) => {
+              log.error(err);
+              logger.error(err.message, loggerObj);
+            });
+          });
+        })
+      );
+    }
+    await homeWindow.webContents.send(
+      "logs",
+      `Successfully downloaded images from page ${pageNum}!`
+    );
+  } else {
+    await homeWindow.webContents.send(
+      "logs",
+      `Can not found images or images have been downloaded already`
     );
   }
 }
@@ -647,27 +687,47 @@ async function crawlByPage(browser, page, link, pageNum, tabNum, folder, arrId, 
 //----------------------------------
 // DOWNLOAD IMG
 //----------------------------------
-async function processDownloadImg(browser, page, url, folder) {
+async function processDownloadImg(page, url, folder) {
   const imgLocation = folder;
-  await page.goto(url, {
-    timeout: 90000,
-  });
-  let isMultiImg;
+  await page
+    .goto(url, {
+      timeout: 90000,
+    })
+    .then(() => {
+      log.info(`load page success`);
+    })
+    .catch((err) => {
+      log.error(`load page error: ${err}`);
+      logger.error(`load page error: ${err.message}`, loggerObj);
+      return;
+    });
+  // let isMultiImg;
+  // try {
+  //   isMultiImg = await page.$eval('div[aria-label="Preview"]', (el) => el.textContent);
+  // } catch (e) {
+  //   log.info("1 img found");
+  // }
+  // if (isMultiImg) {
+  //   log.info("multiple img found");
+  //   await page.click('a[href*="img-original"]');
+  //   await myFunc.timeOutFunc(2200);
+  // }
+  // const arrImgLink = await page.$$eval('a[href*="img-original"]', (el) => el.map((v) => v.href)); //for multiple download
+  let imgLink;
   try {
-    isMultiImg = await page.$eval('div[aria-label="Preview"]', (el) => el.textContent);
+    imgLink = await page.$eval('a[href*="img-original"]', (el) => el.href);
   } catch (e) {
-    log.info("1 img found");
+    await homeWindow.webContents.send("logs", `Can not found image: ${url}`);
+    await page.close();
+    return;
   }
-  if (isMultiImg) {
-    log.info("multiple img found");
-    await page.click('a[href*="img-original"]');
-    await myFunc.timeOutFunc(3000);
-  }
-  const arrImgLink = await page.$$eval('a[href*="img-original"]', (el) => el.map((v) => v.href));
-  await homeWindow.webContents.send("logs", "Downloading images...");
-  for (let i = 0; i < arrImgLink.length; i++) {
-    downloadFile(arrImgLink[i], imgLocation);
-  }
+  downloadFile(imgLink, imgLocation);
+  // if (arrImgLink.length == 0) {
+  //   return;
+  // }
+  // for (let i = 0; i < arrImgLink.length; i++) {
+  //   downloadFile(arrImgLink[i], imgLocation);
+  // }
   await page.close();
 }
 

@@ -172,7 +172,7 @@
         <div class="path-select">
           <span><strong>Save to </strong></span>
           <span id="savePath"></span>
-          <button id="select-folder">Select Folder</button>
+          <button class="btn btn-info btn-xs my-xs-btn" id="select-folder">Select Folder</button>
         </div>
       </div>
       <div class="link-tab">
@@ -342,6 +342,7 @@
         arrayData.push(tabNum.value);
         arrayData.push(pathToSave);
         ipcRenderer.send("crawl-clicked", arrayData);
+        openTab("", "logs");
       }
 
       function saveLinksFunc() {
