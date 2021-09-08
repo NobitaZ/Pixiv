@@ -557,6 +557,13 @@ async function mainProcess(arrAcc) {
       lastPage = pageSplit[1];
     } else {
     }
+    if (!objLink.includes("artworks")) {
+      if (objLink.match(/.$/g) == "/") {
+        objLink = objLink.concat("artworks");
+      } else {
+        objLink = objLink.concat("/artworks");
+      }
+    }
     if (!objLink.includes("?order=popular_d")) {
       objLink = objLink.concat("?order=popular_d");
     }
