@@ -270,31 +270,34 @@ ipcMain.on("auth-form", function (e, item) {
           createAdminWindow();
           mainWindow.close();
         } else {
-          if (typeof user.mac != "undefined") {
-            let userMac = user.mac.toUpperCase().replaceAll("-", ":");
-            if (getmac.default().toUpperCase() == userMac) {
-              if (typeof user.ip1 != "undefined" || typeof user.ip2 != "undefined") {
-                if (publicIPObj.ip == user.ip1 || publicIPObj.ip == user.ip2) {
-                  session.defaultSession.cookies.set({
-                    url: "http://localhost",
-                    name: user.name,
-                  });
-                  loggerObj.user_name = user.username;
-                  createHomeWindow();
-                  mainWindow.close();
-                } else {
-                  mainWindow.webContents.send("msg-login", "wrong-ip");
-                  return;
-                }
-              }
-            } else {
-              mainWindow.webContents.send("msg-login", "wrong-mac");
-              return;
-            }
-          } else {
-            mainWindow.webContents.send("msg-login", "wrong-mac");
-            return;
-          }
+          // if (typeof user.mac != "undefined") {
+          //   let userMac = user.mac.toUpperCase().replaceAll("-", ":");
+          //   if (getmac.default().toUpperCase() == userMac) {
+          //     if (typeof user.ip1 != "undefined" || typeof user.ip2 != "undefined") {
+          //       if (publicIPObj.ip == user.ip1 || publicIPObj.ip == user.ip2) {
+          //         session.defaultSession.cookies.set({
+          //           url: "http://localhost",
+          //           name: user.name,
+          //         });
+          //         loggerObj.user_name = user.username;
+          //         createHomeWindow();
+          //         mainWindow.close();
+          //       } else {
+          //         mainWindow.webContents.send("msg-login", "wrong-ip");
+          //         return;
+          //       }
+          //     }
+          //   } else {
+          //     mainWindow.webContents.send("msg-login", "wrong-mac");
+          //     return;
+          //   }
+          // } else {
+          //   mainWindow.webContents.send("msg-login", "wrong-mac");
+          //   return;
+          // }
+          loggerObj.user_name = user.username;
+          createHomeWindow();
+          mainWindow.close();
         }
       } else {
         mainWindow.webContents.send("msg-login", "pass-failed");
