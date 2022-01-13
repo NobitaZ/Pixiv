@@ -307,8 +307,6 @@ ipcMain.on("auth-form", function (e, item) {
   });
 });
 
-var arrAcc = {};
-
 ipcMain.on("import-clicked", function (e, item) {
   createImportWindow();
 });
@@ -711,6 +709,7 @@ async function processDownloadImg(page, url, folder) {
       logger.error(`load page error: ${err.message}`, loggerObj);
       return;
     });
+  await myFunc.timeOutFunc(1000);
   // let isMultiImg;
   // try {
   //   isMultiImg = await page.$eval('div[aria-label="Preview"]', (el) => el.textContent);
@@ -725,7 +724,7 @@ async function processDownloadImg(page, url, folder) {
   // const arrImgLink = await page.$$eval('a[href*="img-original"]', (el) => el.map((v) => v.href)); //for multiple download
   let imgLink;
   try {
-    imgLink = await page.$eval('a[href*="img-original"]', (el) => el.href);
+    imgLink = await page.$eval('img[src*="img-master"]', (el) => el.src);
   } catch (e) {
     await homeWindow.webContents.send("logs", `Can not found image: ${url}`);
     await page.close();
